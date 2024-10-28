@@ -6,14 +6,20 @@
 //
 
 import UIKit
+import OSLog
 
 class SceneDelegate: UIResponder, UIWindowSceneDelegate {
 
     var window: UIWindow?
+    private let logger = Logger(subsystem: "SceneDelegate", category: "Starting")
 
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        guard let windowScene = (scene as? UIWindowScene) else { return }
+        guard let windowScene = (scene as? UIWindowScene) else {
+            logger.warning("windowScene is nil!")
+            return
+        }
+        logger.info("Initializing scene...")
         window = UIWindow(windowScene: windowScene)
         let viewController = ViewController()
         window?.rootViewController = viewController
