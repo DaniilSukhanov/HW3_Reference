@@ -97,18 +97,42 @@ class ViewController: UIViewController {
         return button
     }()
     
-    private lazy var speedSegmentedControl: UISegmentedControl = {
+    private lazy var speedSegmentedControl: UIStackView = {
+        let stack = UIStackView()
+        
+        let label = UILabel()
+        label.text = "Speed"
+        label.textAlignment = .center
+        label.font = AppFont.titleFont
+        
         let view = UISegmentedControl(items: speeds.compactMap(\.name))
         view.selectedSegmentIndex = 1
         view.addTarget(self, action: #selector(selectSpeedSegmentContror), for: .valueChanged)
-        return view
+        
+        stack.addArrangedSubview(label)
+        stack.addArrangedSubview(view)
+        stack.axis = .vertical
+        stack.alignment = .fill
+        return stack
     }()
     
-    private lazy var colorSegmentedControl: UISegmentedControl = {
+    private lazy var colorSegmentedControl: UIStackView = {
+        let stack = UIStackView()
+        
+        let label = UILabel()
+        label.text = "Color"
+        label.textAlignment = .center
+        label.font = AppFont.titleFont
+        
         let view = UISegmentedControl(items: colors.compactMap(\.name))
         view.selectedSegmentIndex = 1
         view.addTarget(self, action: #selector(selectColorSegmentContror), for: .valueChanged)
-        return view
+        
+        stack.addArrangedSubview(label)
+        stack.addArrangedSubview(view)
+        stack.axis = .vertical
+        stack.alignment = .fill
+        return stack
     }()
     
     override func viewDidLoad() {
