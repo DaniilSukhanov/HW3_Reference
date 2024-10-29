@@ -15,10 +15,27 @@ fileprivate struct ContainerSegmentedControl<T> {
 }
 
 class ViewController: UIViewController {
+    private struct Constants {
+        static let mainStackSpacing: CGFloat = 20
+        static let animationDuration: TimeInterval = 0.1
+        static let mainStackViewPadding: CGFloat = 25
+        static let buttonSubmitHeight: CGFloat = 49
+        static let buttonSubmitWidth: CGFloat = 195
+        static let cornerRadiusButtonSubmit: CGFloat = 10
+        static let scaleValueAnimation: CGFloat = 1.3
+        static let durationBlingingTitle: TimeInterval = 1
+        static let durationScaleAnimationButtonSubmit: TimeInterval = 1.5
+    }
     private struct ConfigurationAnimationView {
         var speed: CGFloat = 1
-        var color: UIColor = .clear
+        var color: UIColor = .gray
     }
+    
+    private lazy var timer: Timer = {
+        Timer.scheduledTimer(withTimeInterval: Constants.durationBlingingTitle * 1.5, repeats: true) { [weak self] _ in
+            self?.blinkingTitle()
+        }
+    }()
     private let logger = Logger(subsystem: "ViewController", category: "UI")
     private let animations = [LottieAnimation.named("animation1"), LottieAnimation.named("animation2"), LottieAnimation.named("animation3")]
     private var selectedAnimation: LottieAnimation?
@@ -30,24 +47,24 @@ class ViewController: UIViewController {
         ContainerSegmentedControl(name: "2X", value: 2.0)
     ]
     private let colors = [
-        ContainerSegmentedControl(name: "Black", value: UIColor.black),
-        ContainerSegmentedControl(name: "Gray", value: UIColor.gray),
-        ContainerSegmentedControl(name: "White", value: UIColor.white)
+        ContainerSegmentedControl(name: "Black", value: AppColor.black),
+        ContainerSegmentedControl(name: "Gray", value: AppColor.gray),
+        ContainerSegmentedControl(name: "White", value: AppColor.white)
     ]
     
     private let titleLabel: UILabel = {
         let label = UILabel()
         label.text = "Choose animation type!"
         label.textAlignment = .center
-        label.font = .systemFont(ofSize: 24, weight: .bold)
-        label.textColor = .white
+        label.font = AppFont.titleFont
+        label.textColor = AppColor.titleTextColor
         return label
     }()
     
     private let mainStackView: UIStackView = {
         let stack = UIStackView()
         stack.axis = .vertical
-        stack.spacing = 20
+        stack.spacing = Constants.mainStackSpacing
         stack.alignment = .center
         return stack
     }()
@@ -57,7 +74,8 @@ class ViewController: UIViewController {
         table.delegate = self
         table.dataSource = self
         table.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
-        table.backgroundColor = .blue
+        table.backgroundColor = .clear
+        table.isScrollEnabled = false
         return table
     }()
     
@@ -71,9 +89,11 @@ class ViewController: UIViewController {
     private lazy var buttonSubmit: UIButton = {
         let button = UIButton()
         button.setTitle("Submit!", for: .normal)
-        button.backgroundColor = .white
-        button.setTitleColor(.black, for: .normal)
+        button.backgroundColor = AppColor.buttonBackgroundColor
+        button.setTitleColor(AppColor.buttonTextColor, for: .normal)
         button.addTarget(self, action: #selector(tapButtonSubmit), for: .touchUpInside)
+        button.layer.cornerRadius = Constants.cornerRadiusButtonSubmit
+        button.layer.masksToBounds = true
         return button
     }()
     
@@ -94,6 +114,17 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setup()
+        timer.fire()
+    }
+    
+    func blinkingTitle() {
+        UIView.animate(withDuration: Constants.durationBlingingTitle / 2, animations: { [weak self] in
+            self?.titleLabel.alpha = 0
+        }) { [weak self] _ in
+            UIView.animate(withDuration: Constants.durationBlingingTitle / 2) {[weak self] in
+                self?.titleLabel.alpha = 1
+            }
+        }
     }
 }
 
@@ -102,10 +133,27 @@ class ViewController: UIViewController {
 private extension ViewController {
     
     func setup() {
-        setupGradualView()
         setupAnimationView()
+        setupGradualView()
         setupMainStackView()
         setupTableView()
+        setupColorSegmentedControl()
+        setupSpeedSegmentedControl()
+        setupSubmitButton()
+    }
+    
+    func setupSpeedSegmentedControl() {
+        speedSegmentedControl.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            speedSegmentedControl.widthAnchor.constraint(equalTo: mainStackView.widthAnchor)
+        ])
+    }
+    
+    func setupColorSegmentedControl() {
+        colorSegmentedControl.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            colorSegmentedControl.widthAnchor.constraint(equalTo: mainStackView.widthAnchor)
+        ])
     }
     
     func setupTableView() {
@@ -120,7 +168,6 @@ private extension ViewController {
     func setupGradualView() {
         view.addSubview(gradientView)
         gradientView.translatesAutoresizingMaskIntoConstraints = false
-        
         NSLayoutConstraint.activate([
             gradientView.heightAnchor.constraint(equalTo: view.heightAnchor),
             gradientView.widthAnchor.constraint(equalTo: view.widthAnchor),
@@ -130,21 +177,19 @@ private extension ViewController {
     }
     
     func setupAnimationView() {
-        
         view.addSubview(animationView)
         animationView.translatesAutoresizingMaskIntoConstraints = false
-        
         NSLayoutConstraint.activate([
             animationView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
             animationView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-            animationView.widthAnchor.constraint(equalTo: view.widthAnchor)
+            animationView.widthAnchor.constraint(equalTo: view.widthAnchor),
+            animationView.heightAnchor.constraint(equalTo: view.heightAnchor)
         ])
     }
     
     func setupMainStackView() {
         mainStackView.translatesAutoresizingMaskIntoConstraints = false
         gradientView.addSubview(mainStackView)
-        
         mainStackView.addArrangedSubview(titleLabel)
         mainStackView.addArrangedSubview(tableView)
         mainStackView.addArrangedSubview(speedSegmentedControl)
@@ -152,11 +197,19 @@ private extension ViewController {
         mainStackView.addArrangedSubview(buttonSubmit)
         
         NSLayoutConstraint.activate([
-            mainStackView.topAnchor.constraint(equalTo: gradientView.safeAreaLayoutGuide.topAnchor),
-            mainStackView.bottomAnchor.constraint(equalTo: gradientView.safeAreaLayoutGuide.bottomAnchor),
-            mainStackView.leadingAnchor.constraint(equalTo: gradientView.leadingAnchor),
-            mainStackView.trailingAnchor.constraint(equalTo: gradientView.trailingAnchor)
-
+            mainStackView.topAnchor.constraint(equalTo: gradientView.safeAreaLayoutGuide.topAnchor, constant: Constants.mainStackViewPadding),
+            mainStackView.bottomAnchor.constraint(equalTo: gradientView.safeAreaLayoutGuide.bottomAnchor, constant: -Constants.mainStackViewPadding),
+            mainStackView.leadingAnchor.constraint(equalTo: gradientView.leadingAnchor, constant: Constants.mainStackViewPadding),
+            mainStackView.trailingAnchor.constraint(equalTo: gradientView.trailingAnchor, constant: -Constants.mainStackViewPadding)
+        ])
+    }
+    
+    func setupSubmitButton() {
+        buttonSubmit.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+            buttonSubmit.widthAnchor.constraint(equalToConstant: Constants.buttonSubmitWidth),
+            buttonSubmit.heightAnchor.constraint(equalToConstant: Constants.buttonSubmitHeight)
         ])
     }
 }
@@ -164,7 +217,6 @@ private extension ViewController {
 // MARK: - UITableViewDataSource and UITableViewDelegate
 
 extension ViewController: UITableViewDelegate, UITableViewDataSource {
-    
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return animations.count
     }
@@ -173,7 +225,7 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
         cell.textLabel?.text = "animation\(indexPath.row + 1)"
         cell.backgroundColor = .clear
-        cell.textLabel?.textColor = .white
+        cell.textLabel?.textColor = AppColor.white
         return cell
     }
     
@@ -188,7 +240,7 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource {
 private extension ViewController {
     
     func showAnimationView() {
-        UIView.animate(withDuration: 0.1) { [weak self] in
+        UIView.animate(withDuration: Constants.animationDuration) { [weak self] in
             self?.animationView.isHidden = false
             self?.gradientView.isHidden = true
             self?.animationView.play(completion: { [weak self] completed in
@@ -200,13 +252,12 @@ private extension ViewController {
     }
     
     func hideAnimationView() {
-        UIView.animate(withDuration: 0.1) { [weak self] in
+        UIView.animate(withDuration: Constants.animationDuration) { [weak self] in
             self?.animationView.isHidden = true
             self?.gradientView.isHidden = false
             self?.animationView.stop()
         }
     }
-    
 }
 
 // MARK: - Actions
@@ -214,10 +265,46 @@ private extension ViewController {
 extension ViewController {
     @objc func tapButtonSubmit() {
         logger.info("Tap button submit.")
-        animationView.animationSpeed = configAnimationView.speed
-        animationView.tintColor = configAnimationView.color
-        animationView.animation = selectedAnimation
-        showAnimationView()
+        if selectedAnimation != nil {
+            let scaledTransform = self.buttonSubmit.transform.scaledBy(x: Constants.scaleValueAnimation, y: Constants.scaleValueAnimation)
+            let scaledAndTranslatedTransform = scaledTransform.translatedBy(x: 0.0, y: -(buttonSubmit.frame.height * (1 - Constants.scaleValueAnimation))/2)
+            UIView.animate(withDuration: Constants.durationScaleAnimationButtonSubmit/2, animations: { [weak self] in
+                self?.buttonSubmit.transform = scaledAndTranslatedTransform
+            }) { [weak self] _ in
+                UIView.animate(withDuration: Constants.durationScaleAnimationButtonSubmit/2, animations: { [weak self] in
+                    self?.buttonSubmit.transform = .identity
+                }) { [weak self] _ in
+                    guard let self else {
+                        return
+                    }
+                    self.animationView.animationSpeed = self.configAnimationView.speed
+                    self.animationView.backgroundColor = self.configAnimationView.color
+                    self.animationView.animation = self.selectedAnimation
+                    self.showAnimationView()
+                }
+            }
+        } else {
+            UIView.animateKeyframes(withDuration: 0.5, delay: 0) { [weak self] in
+                UIView.addKeyframe(withRelativeStartTime: 0.0, relativeDuration: 0.25) { [weak self] in
+                    guard let self else {
+                        return
+                    }
+                    self.buttonSubmit.transform = CGAffineTransform(translationX: -(self.buttonSubmit.frame.width*0.2), y: 0)
+                }
+                UIView.addKeyframe(withRelativeStartTime: 0.25, relativeDuration: 0.25) { [weak self] in
+                    guard let self else {
+                        return
+                    }
+                    self.buttonSubmit.transform = CGAffineTransform(translationX: self.buttonSubmit.frame.width*0.2, y: 0)
+                }
+                UIView.addKeyframe(withRelativeStartTime: 0.5, relativeDuration: 0.25) { [weak self] in
+                    guard let self else {
+                        return
+                    }
+                    self.buttonSubmit.transform = .identity
+                }
+            }
+        }
     }
     
     @objc func selectSpeedSegmentContror(_ sender: UISegmentedControl) {
