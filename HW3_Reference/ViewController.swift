@@ -6,10 +6,62 @@
 //
 
 import UIKit
+import Lottie
+import OSLog
 
 class ViewController: UIViewController {
-    
+    private struct ConfigurationAnimationView {
+        var speed: CGFloat = 1
+        var color: UIColor = .clear
+    }
+    private let logger = Logger(subsystem: "ViewController", category: "UI")
+    private let animations = [LottieAnimation.named("animation1"), LottieAnimation.named("animation2"), LottieAnimation.named("animation3")]
+    private var selectedAnimation: LottieAnimation?
     private let gradientView = GradientView(colors: [AppColor.firstBackgroundColor, AppColor.secondBackgroundColor], duration: 3)
+    private var configAnimationView = ConfigurationAnimationView()
+    private var tableViewHeightConstraint: NSLayoutConstraint?
+    
+    private let titleLabel: UILabel = {
+        let label = UILabel()
+        label.text = "Choose animation type!"
+        label.textAlignment = .center
+        label.font = .systemFont(ofSize: 24, weight: .bold)
+        label.textColor = .white
+        return label
+    }()
+    
+    private let mainStackView: UIStackView = {
+        let stack = UIStackView()
+        stack.axis = .vertical
+        stack.spacing = 20
+        stack.alignment = .center
+        return stack
+    }()
+    
+    private lazy var tableView: UITableView = {
+        let table = UITableView()
+        table.delegate = self
+        table.dataSource = self
+        table.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
+        table.backgroundColor = .blue
+        return table
+    }()
+    
+    private let animationView: LottieAnimationView = {
+        let view = LottieAnimationView()
+        view.contentMode = .scaleAspectFit
+        view.loopMode = .playOnce
+        return view
+    }()
+    
+    private lazy var buttonSubmit: UIButton = {
+        let button = UIButton()
+        button.setTitle("Submit!", for: .normal)
+        button.backgroundColor = .white
+        button.setTitleColor(.black, for: .normal)
+        button.addTarget(self, action: #selector(tapButtonSubmit), for: .touchUpInside)
+        return button
+    }()
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -20,8 +72,20 @@ class ViewController: UIViewController {
 // MARK: - Setup Layouts
 
 private extension ViewController {
+    
     func setup() {
         setupGradualView()
+        setupAnimationView()
+        setupMainStackView()
+        setupTableView()
+    }
+    
+    func setupTableView() {
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+            tableView.heightAnchor.constraint(equalToConstant: 200)
+        ])
     }
     
     func setupGradualView() {
@@ -35,5 +99,93 @@ private extension ViewController {
             gradientView.leadingAnchor.constraint(equalTo: view.leadingAnchor)
         ])
     }
+    
+    func setupAnimationView() {
+        
+        view.addSubview(animationView)
+        animationView.translatesAutoresizingMaskIntoConstraints = false
+        
+        NSLayoutConstraint.activate([
+            animationView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            animationView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+            animationView.widthAnchor.constraint(equalTo: view.widthAnchor)
+        ])
+    }
+    
+    func setupMainStackView() {
+        mainStackView.translatesAutoresizingMaskIntoConstraints = false
+        gradientView.addSubview(mainStackView)
+        
+        mainStackView.addArrangedSubview(titleLabel)
+        mainStackView.addArrangedSubview(tableView)
+        mainStackView.addArrangedSubview(buttonSubmit)
+        
+        NSLayoutConstraint.activate([
+            mainStackView.topAnchor.constraint(equalTo: gradientView.safeAreaLayoutGuide.topAnchor),
+            mainStackView.bottomAnchor.constraint(equalTo: gradientView.safeAreaLayoutGuide.bottomAnchor),
+            mainStackView.leadingAnchor.constraint(equalTo: gradientView.leadingAnchor),
+            mainStackView.trailingAnchor.constraint(equalTo: gradientView.trailingAnchor)
+
+        ])
+    }
 }
 
+// MARK: - UITableViewDataSource and UITableViewDelegate
+
+extension ViewController: UITableViewDelegate, UITableViewDataSource {
+    
+    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
+        return animations.count
+    }
+    
+    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
+        cell.textLabel?.text = "animation\(indexPath.row + 1)"
+        cell.backgroundColor = .clear
+        cell.textLabel?.textColor = .white
+        return cell
+    }
+    
+    func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
+        selectedAnimation = animations[indexPath.row]
+        logger.info("select animation\(indexPath.row).")
+    }
+}
+
+// MARK: - Hide and Show view
+
+private extension ViewController {
+    
+    func showAnimationView() {
+        UIView.animate(withDuration: 0.1) { [weak self] in
+            self?.animationView.isHidden = false
+            self?.gradientView.isHidden = true
+            self?.animationView.play(completion: { [weak self] completed in
+                if completed {
+                    self?.hideAnimationView()
+                }
+            })
+        }
+    }
+    
+    func hideAnimationView() {
+        UIView.animate(withDuration: 0.1) { [weak self] in
+            self?.animationView.isHidden = true
+            self?.gradientView.isHidden = false
+            self?.animationView.stop()
+        }
+    }
+    
+}
+
+// MARK: - Actions
+
+extension ViewController {
+    @objc func tapButtonSubmit() {
+        logger.info("Tap button submit.")
+        animationView.animationSpeed = configAnimationView.speed
+        animationView.tintColor = configAnimationView.color
+        animationView.animation = selectedAnimation
+        showAnimationView()
+    }
+}
