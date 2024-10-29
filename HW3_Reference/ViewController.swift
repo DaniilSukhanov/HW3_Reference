@@ -9,6 +9,11 @@ import UIKit
 import Lottie
 import OSLog
 
+fileprivate struct ContainerSegmentedControl<T> {
+    let name: String
+    let value: T
+}
+
 class ViewController: UIViewController {
     private struct ConfigurationAnimationView {
         var speed: CGFloat = 1
@@ -19,7 +24,16 @@ class ViewController: UIViewController {
     private var selectedAnimation: LottieAnimation?
     private let gradientView = GradientView(colors: [AppColor.firstBackgroundColor, AppColor.secondBackgroundColor], duration: 3)
     private var configAnimationView = ConfigurationAnimationView()
-    private var tableViewHeightConstraint: NSLayoutConstraint?
+    private let speeds = [
+        ContainerSegmentedControl(name: "0.5X", value: 0.5),
+        ContainerSegmentedControl(name: "1X", value: 1.0),
+        ContainerSegmentedControl(name: "2X", value: 2.0)
+    ]
+    private let colors = [
+        ContainerSegmentedControl(name: "Black", value: UIColor.black),
+        ContainerSegmentedControl(name: "Gray", value: UIColor.gray),
+        ContainerSegmentedControl(name: "White", value: UIColor.white)
+    ]
     
     private let titleLabel: UILabel = {
         let label = UILabel()
@@ -63,6 +77,20 @@ class ViewController: UIViewController {
         return button
     }()
     
+    private lazy var speedSegmentedControl: UISegmentedControl = {
+        let view = UISegmentedControl(items: speeds.compactMap(\.name))
+        view.selectedSegmentIndex = 1
+        view.addTarget(self, action: #selector(selectSpeedSegmentContror), for: .valueChanged)
+        return view
+    }()
+    
+    private lazy var colorSegmentedControl: UISegmentedControl = {
+        let view = UISegmentedControl(items: colors.compactMap(\.name))
+        view.selectedSegmentIndex = 1
+        view.addTarget(self, action: #selector(selectColorSegmentContror), for: .valueChanged)
+        return view
+    }()
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setup()
@@ -82,9 +110,10 @@ private extension ViewController {
     
     func setupTableView() {
         tableView.translatesAutoresizingMaskIntoConstraints = false
-        
+        tableView.reloadData()
         NSLayoutConstraint.activate([
-            tableView.heightAnchor.constraint(equalToConstant: 200)
+            tableView.widthAnchor.constraint(equalTo: mainStackView.widthAnchor),
+            tableView.heightAnchor.constraint(equalToConstant: tableView.contentSize.height)
         ])
     }
     
@@ -118,6 +147,8 @@ private extension ViewController {
         
         mainStackView.addArrangedSubview(titleLabel)
         mainStackView.addArrangedSubview(tableView)
+        mainStackView.addArrangedSubview(speedSegmentedControl)
+        mainStackView.addArrangedSubview(colorSegmentedControl)
         mainStackView.addArrangedSubview(buttonSubmit)
         
         NSLayoutConstraint.activate([
@@ -187,5 +218,15 @@ extension ViewController {
         animationView.tintColor = configAnimationView.color
         animationView.animation = selectedAnimation
         showAnimationView()
+    }
+    
+    @objc func selectSpeedSegmentContror(_ sender: UISegmentedControl) {
+        logger.info("Select speed segment control.")
+        configAnimationView.speed = speeds[sender.selectedSegmentIndex].value
+    }
+    
+    @objc func selectColorSegmentContror(_ sender: UISegmentedControl) {
+        logger.info("Select color segment control.")
+        configAnimationView.color = colors[sender.selectedSegmentIndex].value
     }
 }
