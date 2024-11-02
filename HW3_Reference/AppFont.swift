@@ -10,3 +10,4 @@ import UIKit
 enum AppFont {
     static let titleFont = UIFont.systemFont(ofSize: 24, weight: .bold)
 }
+ 

@@ -9,47 +9,45 @@ import UIKit
 import Lottie
 import OSLog
 
-fileprivate struct ContainerSegmentedControl<T> {
+fileprivate struct Container<T> {
     let name: String
     let value: T
 }
 
 class ViewController: UIViewController {
     private struct Constants {
+        static let spacingBetweenLabelAndView: CGFloat = 10
         static let mainStackSpacing: CGFloat = 20
         static let animationDuration: TimeInterval = 0.1
         static let mainStackViewPadding: CGFloat = 25
         static let buttonSubmitHeight: CGFloat = 49
         static let buttonSubmitWidth: CGFloat = 195
-        static let cornerRadiusButtonSubmit: CGFloat = 10
-        static let scaleValueAnimation: CGFloat = 1.3
-        static let durationBlingingTitle: TimeInterval = 1
-        static let durationScaleAnimationButtonSubmit: TimeInterval = 1.5
-    }
-    private struct ConfigurationAnimationView {
-        var speed: CGFloat = 1
-        var color: UIColor = .gray
+        static let buttonSubmitCornerRadius: CGFloat = 10
+        static let animationScaleValue: CGFloat = 1.3
+        static let blingingTitleDuration: TimeInterval = 1
+        static let scaleAnimationButtonSubmitDuration: TimeInterval = 1.5
+        static let defaultIndex: Int = 1
     }
     
-    private lazy var timer: Timer = {
-        Timer.scheduledTimer(withTimeInterval: Constants.durationBlingingTitle * 1.5, repeats: true) { [weak self] _ in
-            self?.blinkingTitle()
-        }
-    }()
+    private var selectedIndexSpeed: Int = Constants.defaultIndex
+    private var selectedIndexColor: Int = Constants.defaultIndex
     private let logger = Logger(subsystem: "ViewController", category: "UI")
-    private let animations = [LottieAnimation.named("animation1"), LottieAnimation.named("animation2"), LottieAnimation.named("animation3")]
-    private var selectedAnimation: LottieAnimation?
+    private let animations = [
+        Container(name: "Craz-z-z-zy Pumpkin" + String(repeating: "!", count: 666), value: LottieAnimation.named("animation1")),
+        Container(name: "Somathing...", value: LottieAnimation.named("animation2")),
+        Container(name: "Spider-man!", value: LottieAnimation.named("animation3"))
+    ]
+    private var selectedIndexAnimation: Int?
     private let gradientView = GradientView(colors: [AppColor.firstBackgroundColor, AppColor.secondBackgroundColor], duration: 3)
-    private var configAnimationView = ConfigurationAnimationView()
     private let speeds = [
-        ContainerSegmentedControl(name: "0.5X", value: 0.5),
-        ContainerSegmentedControl(name: "1X", value: 1.0),
-        ContainerSegmentedControl(name: "2X", value: 2.0)
+        Container(name: "0.5X", value: 0.5),
+        Container(name: "1X", value: 1.0),
+        Container(name: "2X", value: 2.0)
     ]
     private let colors = [
-        ContainerSegmentedControl(name: "Black", value: AppColor.black),
-        ContainerSegmentedControl(name: "Gray", value: AppColor.gray),
-        ContainerSegmentedControl(name: "White", value: AppColor.white)
+        Container(name: "Black", value: AppColor.black),
+        Container(name: "Gray", value: AppColor.gray),
+        Container(name: "White", value: AppColor.white)
     ]
     
     private let titleLabel: UILabel = {
@@ -92,44 +90,39 @@ class ViewController: UIViewController {
         button.backgroundColor = AppColor.buttonBackgroundColor
         button.setTitleColor(AppColor.buttonTextColor, for: .normal)
         button.addTarget(self, action: #selector(tapButtonSubmit), for: .touchUpInside)
-        button.layer.cornerRadius = Constants.cornerRadiusButtonSubmit
+        button.layer.cornerRadius = Constants.buttonSubmitCornerRadius
         button.layer.masksToBounds = true
         return button
     }()
     
     private lazy var speedSegmentedControl: UIStackView = {
-        let stack = UIStackView()
-        
         let label = UILabel()
         label.text = "Speed"
         label.textAlignment = .center
         label.font = AppFont.titleFont
         
         let view = UISegmentedControl(items: speeds.compactMap(\.name))
-        view.selectedSegmentIndex = 1
+        view.selectedSegmentIndex = Constants.defaultIndex
         view.addTarget(self, action: #selector(selectSpeedSegmentContror), for: .valueChanged)
-        
-        stack.addArrangedSubview(label)
-        stack.addArrangedSubview(view)
+        let stack = UIStackView(arrangedSubviews: [label, view])
+        stack.setCustomSpacing(Constants.spacingBetweenLabelAndView, after: label)
         stack.axis = .vertical
         stack.alignment = .fill
         return stack
     }()
     
     private lazy var colorSegmentedControl: UIStackView = {
-        let stack = UIStackView()
-        
         let label = UILabel()
         label.text = "Color"
         label.textAlignment = .center
         label.font = AppFont.titleFont
         
         let view = UISegmentedControl(items: colors.compactMap(\.name))
-        view.selectedSegmentIndex = 1
+        view.selectedSegmentIndex = Constants.defaultIndex
         view.addTarget(self, action: #selector(selectColorSegmentContror), for: .valueChanged)
         
-        stack.addArrangedSubview(label)
-        stack.addArrangedSubview(view)
+        let stack = UIStackView(arrangedSubviews: [label, view])
+        stack.setCustomSpacing(Constants.spacingBetweenLabelAndView, after: label)
         stack.axis = .vertical
         stack.alignment = .fill
         return stack
@@ -138,16 +131,12 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setup()
-        timer.fire()
+        startBlinkingTitle()
     }
     
-    func blinkingTitle() {
-        UIView.animate(withDuration: Constants.durationBlingingTitle / 2, animations: { [weak self] in
+    func startBlinkingTitle() {
+        UIView.animate(withDuration: Constants.blingingTitleDuration, delay: 0, options: [.repeat, .autoreverse]){ [weak self] in
             self?.titleLabel.alpha = 0
-        }) { [weak self] _ in
-            UIView.animate(withDuration: Constants.durationBlingingTitle / 2) {[weak self] in
-                self?.titleLabel.alpha = 1
-            }
         }
     }
 }
@@ -158,7 +147,7 @@ private extension ViewController {
     
     func setup() {
         setupAnimationView()
-        setupGradualView()
+        setupGradientView()
         setupMainStackView()
         setupTableView()
         setupColorSegmentedControl()
@@ -189,7 +178,7 @@ private extension ViewController {
         ])
     }
     
-    func setupGradualView() {
+    func setupGradientView() {
         view.addSubview(gradientView)
         gradientView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
@@ -204,8 +193,6 @@ private extension ViewController {
         view.addSubview(animationView)
         animationView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
-            animationView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            animationView.centerYAnchor.constraint(equalTo: view.centerYAnchor),
             animationView.widthAnchor.constraint(equalTo: view.widthAnchor),
             animationView.heightAnchor.constraint(equalTo: view.heightAnchor)
         ])
@@ -247,14 +234,14 @@ extension ViewController: UITableViewDelegate, UITableViewDataSource {
     
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-        cell.textLabel?.text = "animation\(indexPath.row + 1)"
+        cell.textLabel?.text = animations[indexPath.row].name
         cell.backgroundColor = .clear
         cell.textLabel?.textColor = AppColor.white
         return cell
     }
     
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
-        selectedAnimation = animations[indexPath.row]
+        selectedIndexAnimation = indexPath.row
         logger.info("select animation\(indexPath.row).")
     }
 }
@@ -269,17 +256,13 @@ private extension ViewController {
             self?.gradientView.isHidden = true
             self?.animationView.play(completion: { [weak self] completed in
                 if completed {
-                    self?.hideAnimationView()
+                    UIView.animate(withDuration: Constants.animationDuration) { [weak self] in
+                        self?.animationView.isHidden = true
+                        self?.gradientView.isHidden = false
+                        self?.animationView.stop()
+                    }
                 }
             })
-        }
-    }
-    
-    func hideAnimationView() {
-        UIView.animate(withDuration: Constants.animationDuration) { [weak self] in
-            self?.animationView.isHidden = true
-            self?.gradientView.isHidden = false
-            self?.animationView.stop()
         }
     }
 }
@@ -289,21 +272,21 @@ private extension ViewController {
 extension ViewController {
     @objc func tapButtonSubmit() {
         logger.info("Tap button submit.")
-        if selectedAnimation != nil {
-            let scaledTransform = self.buttonSubmit.transform.scaledBy(x: Constants.scaleValueAnimation, y: Constants.scaleValueAnimation)
-            let scaledAndTranslatedTransform = scaledTransform.translatedBy(x: 0.0, y: -(buttonSubmit.frame.height * (1 - Constants.scaleValueAnimation))/2)
-            UIView.animate(withDuration: Constants.durationScaleAnimationButtonSubmit/2, animations: { [weak self] in
+        if let selectedIndexAnimation {
+            let scaledTransform = self.buttonSubmit.transform.scaledBy(x: Constants.animationScaleValue, y: Constants.animationScaleValue)
+            let scaledAndTranslatedTransform = scaledTransform.translatedBy(x: 0.0, y: -(buttonSubmit.frame.height * (1 - Constants.animationScaleValue))/2)
+            UIView.animate(withDuration: Constants.scaleAnimationButtonSubmitDuration/2, animations: { [weak self] in
                 self?.buttonSubmit.transform = scaledAndTranslatedTransform
             }) { [weak self] _ in
-                UIView.animate(withDuration: Constants.durationScaleAnimationButtonSubmit/2, animations: { [weak self] in
+                UIView.animate(withDuration: Constants.scaleAnimationButtonSubmitDuration/2, animations: { [weak self] in
                     self?.buttonSubmit.transform = .identity
                 }) { [weak self] _ in
                     guard let self else {
                         return
                     }
-                    self.animationView.animationSpeed = self.configAnimationView.speed
-                    self.animationView.backgroundColor = self.configAnimationView.color
-                    self.animationView.animation = self.selectedAnimation
+                    self.animationView.animationSpeed = speeds[self.selectedIndexSpeed].value
+                    self.animationView.backgroundColor = colors[self.selectedIndexColor].value
+                    self.animationView.animation = animations[selectedIndexAnimation].value
                     self.showAnimationView()
                 }
             }
@@ -327,17 +310,23 @@ extension ViewController {
                     }
                     self.buttonSubmit.transform = .identity
                 }
+            } completion: { [weak self] completed in
+                if completed {
+                    let alert = UIAlertController(title: "Error!", message: "Not selected animation!", preferredStyle: .alert)
+                    alert.addAction(.init(title: "OK", style: .cancel))
+                    self?.present(alert, animated: true)
+                }
             }
         }
     }
     
     @objc func selectSpeedSegmentContror(_ sender: UISegmentedControl) {
         logger.info("Select speed segment control.")
-        configAnimationView.speed = speeds[sender.selectedSegmentIndex].value
+        selectedIndexSpeed = sender.selectedSegmentIndex
     }
     
     @objc func selectColorSegmentContror(_ sender: UISegmentedControl) {
         logger.info("Select color segment control.")
-        configAnimationView.color = colors[sender.selectedSegmentIndex].value
+        selectedIndexColor = sender.selectedSegmentIndex
     }
 }

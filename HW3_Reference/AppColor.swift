@@ -18,3 +18,4 @@ enum AppColor {
     static let buttonBackgroundColor = UIColor(red: 0, green: 122.0/255.0, blue: 1, alpha: 1)
     static let buttonTextColor = UIColor.white
 }
+ 
